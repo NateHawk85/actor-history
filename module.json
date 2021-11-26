@@ -1,0 +1,15 @@
+{
+  "name": "actor-history",
+  "title": "Actor History",
+  "description": "A simple module that stores the history of an Actor's character sheet modifications, including items, spells, features, etc.",
+  "author": "NateHawk85",
+  "version": "1.0.0",
+  "minimumCoreVersion": "0.8.0",
+  "compatibleCoreVersion": "0.8.9",
+  "system": [
+    "dnd5e"
+  ],
+  "scripts": [
+    "scripts/actor-history.js"
+  ]
+}
