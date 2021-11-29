@@ -1,0 +1,39 @@
+{
+  "name": "actor-history",
+  "version": "1.0.0",
+  "description": "A small FoundryVTT module that allows tracking of Actor modification history.",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NateHawk85/actor-history.git"
+  },
+  "keywords": [
+    "FoundryVTT",
+    "Actor",
+    "Foundry",
+    "dnd5e",
+    "module"
+  ],
+  "author": "NateHawk85",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/NateHawk85/actor-history/issues"
+  },
+  "homepage": "https://github.com/NateHawk85/actor-history#readme",
+  "devDependencies": {
+    "@babel/plugin-transform-runtime": "^7.16.4",
+    "@babel/preset-env": "^7.16.4",
+    "jest": "^27.3.1"
+  },
+  "jest": {
+    "setupFiles": [
+      "./mocks/mock-foundry.js"
+    ]
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.16.3"
+  }
+}
