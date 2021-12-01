@@ -3,55 +3,58 @@ Hooks.on('updateActor', async (actor, change, options, userId) =>
 	await storeUpdateActorHistory(actor, change);
 });
 
-export async function storeUpdateActorHistory(actor, change)
-{
-	if (change.data && actor.type === 'character')
-	{
-		const changes = {
-			change: change.data
-		};
-		await addChangeDataToActorHistory('updateActor', changes, actor);
-	}
-}
-
 Hooks.on('createItem', async (item, options, userId) =>
 {
 	await storeCreateItemHistory(item);
 });
-
-export async function storeCreateItemHistory(item)
-{
-	const actor = item.parent;
-
-	if (actor && actor.type === 'character')
-	{
-		const changes = {
-			item: item.data
-		};
-		await addChangeDataToActorHistory('createItem', changes, actor);
-	}
-}
 
 Hooks.on('updateItem', async (item, change, options, userId) =>
 {
 	await storeUpdateItemHistory(item, change);
 });
 
+export async function storeUpdateActorHistory(actor, change)
+{
+	if (!shouldActorStoreHistory(actor) || !change.data)
+	{
+		return;
+	}
+
+	const changes = {
+		change: change.data
+	};
+	await addChangeDataToActorHistory('updateActor', changes, actor);
+}
+
+export async function storeCreateItemHistory(item)
+{
+	const actor = item.parent;
+
+	if (!shouldActorStoreHistory(actor))
+	{
+		return;
+	}
+
+	const changes = {
+		item: item.data
+	};
+	await addChangeDataToActorHistory('createItem', changes, actor);
+}
+
 export async function storeUpdateItemHistory(item, change)
 {
 	const actor = item.parent;
 
-	if (actor && actor.type === 'character')
+	if (!shouldActorStoreHistory(actor) || !change.data || itemWasClosedWithNoChanges(item, change))
 	{
-		if (!itemWasClosedWithNoChanges(item, change))
-		{
-			const changes = {
-				item: item.data,
-				change: change.data
-			};
-			await addChangeDataToActorHistory('updateItem', changes, actor);
-		}
+		return;
 	}
+
+	const changes = {
+		item: item.data,
+		change: change.data
+	};
+	await addChangeDataToActorHistory('updateItem', changes, actor);
 }
 
 async function addChangeDataToActorHistory(hookName, changes, actor)
@@ -70,12 +73,9 @@ async function addChangeDataToActorHistory(hookName, changes, actor)
 	await actor.setFlag('actor-history', 'history', currentHistory);
 }
 
-function findMostRecentItemDamageChangeFromHistory(item, history)
+function shouldActorStoreHistory(actor)
 {
-	const matchingDamageChangeHistories = history.filter(element => element.changes.item?._id === item.id)
-												 .filter(element => element.changes.item.data?.damage.parts);
-
-	return matchingDamageChangeHistories.length > 0 ? matchingDamageChangeHistories[matchingDamageChangeHistories.length - 1] : undefined;
+	return actor && actor.type === 'character';
 }
 
 function getCurrentTimeData()
@@ -107,11 +107,25 @@ function itemWasClosedWithNoChanges(item, change)
 
 	if (changeObjectKeys.length === 1 && changeObjectKeys[0] === 'damage')
 	{
-		const history = item.parent.getFlag('actor-history', 'history');
-		const mostRecentItemDamageChange = findMostRecentItemDamageChangeFromHistory(item, history);
+		const actorHistory = item.parent.getFlag('actor-history', 'history');
+		const mostRecentItemDamageChange = findMostRecentItemDamageChangeFromHistory(item, actorHistory);
 
-		return !mostRecentItemDamageChange ||
-			JSON.stringify(mostRecentItemDamageChange.changes.item.data.damage.parts) === JSON.stringify(item.data.data.damage?.parts);
+		return mostRecentItemDamageChange
+			&& JSON.stringify(change.data.damage?.parts) === JSON.stringify(mostRecentItemDamageChange.changes.item.data.damage.parts);
 	}
 	return false;
+}
+
+function findMostRecentItemDamageChangeFromHistory(item, history)
+{
+	try
+	{
+		const matchingDamageChangeHistories = history.filter(element => element.changes?.item?._id === item.data._id)
+													 .filter(element => element.changes.item.data.damage?.parts);
+
+		return matchingDamageChangeHistories.length > 0 ? matchingDamageChangeHistories[matchingDamageChangeHistories.length - 1] : undefined;
+	} catch (error)
+	{
+		return undefined;
+	}
 }

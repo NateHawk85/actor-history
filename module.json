@@ -9,7 +9,7 @@
   "system": [
     "dnd5e"
   ],
-  "scripts": [
+  "esmodules": [
     "scripts/actor-history.js"
   ]
 }

@@ -4,133 +4,552 @@ import MockActor from "../../mocks/mock-actor";
 const DATE_TIMESTAMP_UTC = 1640995199000;
 const SIMPLE_CALENDAR_TIMESTAMP_TO_DATE = 'SimpleCalendar time object';
 
-let actor;
+const ITEM_ID = 'ABCD1234';
+const CLUB_DESCRIPTION = '<p>A stout knob of wood forms a simple, but effective, cudgel.</p>';
+const CLUB_DAMAGE = '1d4 + @mod';
+const CLUB_DAMAGE_TYPE = 'bludgeoning';
+const ITEM_DATA = {
+	_id: ITEM_ID,
+	data: {
+		description: CLUB_DESCRIPTION,
+		damage: {
+			parts: [CLUB_DAMAGE, CLUB_DAMAGE_TYPE],
+			versatile: ''
+		}
+	},
+	img: 'systems/dnd5e/icons/items/weapons/club-spikes.jpg'
+};
+const CHANGE_DATA = {
+	damage: {
+		parts: [CLUB_DAMAGE, CLUB_DAMAGE_TYPE]
+	}
+};
+
+let dateUTCSpy;
+
+let mockActor;
+let item;
+let change;
 
 beforeEach(() =>
 {
-	actor = new MockActor('character');
+	mockActor = new MockActor('character');
+	item = {
+		data: {...ITEM_DATA},
+		parent: mockActor
+	};
+	change = {
+		data: {...CHANGE_DATA}
+	};
+
 	mockTimestamp(DATE_TIMESTAMP_UTC);
 	mockSimpleCalendar(true, SIMPLE_CALENDAR_TIMESTAMP_TO_DATE);
 });
 
-//region storeUpdateActorHistory
-
-test('storeUpdateActorHistory - When change.data is undefined Then does nothing', () =>
+describe('storeUpdateActorHistory', () =>
 {
-	ActorHistory.storeUpdateActorHistory(actor, {});
+	describe('WHEN parameters are invalid THEN does nothing', () =>
+	{
+		test('WHEN change.data is undefined THEN does nothing', () =>
+		{
+			change.data = undefined;
 
-	expect(actor.getFlag('actor-history', 'history'))
-		.toBeUndefined();
+			ActorHistory.storeUpdateActorHistory(mockActor, change);
+
+			expect(findHistoryFromActor(mockActor))
+				.toBeUndefined();
+		});
+
+		test('WHEN actor.type is not "character" THEN does nothing', () =>
+		{
+			mockActor.type = 'npc';
+
+			ActorHistory.storeUpdateActorHistory(mockActor, change);
+
+			expect(findHistoryFromActor(mockActor))
+				.toBeUndefined();
+		});
+	});
+
+	describe('WHEN parameters are valid and no history exists THEN initializes and updates history', () =>
+	{
+		test('WHEN valid change and no history exists and Simple Calendar is not installed THEN initializes and updates history', () =>
+		{
+			mockSimpleCalendar(false);
+
+			ActorHistory.storeUpdateActorHistory(mockActor, change);
+
+			const expected = [
+				{
+					hook: 'updateActor',
+					changes: {
+						change: CHANGE_DATA
+					},
+					timestampIRL: new Date(DATE_TIMESTAMP_UTC)
+				}
+			];
+			expect(findHistoryFromActor(mockActor))
+				.toStrictEqual(expected);
+		});
+
+		test('WHEN valid change and no history exists THEN initializes and updates history', () =>
+		{
+			ActorHistory.storeUpdateActorHistory(mockActor, change);
+
+			const expected = [
+				{
+					hook: 'updateActor',
+					changes: {
+						change: CHANGE_DATA
+					},
+					timestampIRL: new Date(DATE_TIMESTAMP_UTC),
+					timestampInGame: SIMPLE_CALENDAR_TIMESTAMP_TO_DATE
+				}
+			];
+			expect(findHistoryFromActor(mockActor))
+				.toStrictEqual(expected);
+		});
+
+		test('WHEN valid change and no history exists THEN initializes and updates history correctly', () =>
+		{
+			mockTimestamp(12345);
+			mockSimpleCalendar(true, 'Another SimpleCalendar time object');
+			change.data = {
+				additionalInfo: 'another test value'
+			};
+
+			ActorHistory.storeUpdateActorHistory(mockActor, change);
+
+			const expected = [
+				{
+					hook: 'updateActor',
+					changes: {
+						change: change.data
+					},
+					timestampIRL: new Date(12345),
+					timestampInGame: 'Another SimpleCalendar time object'
+				}
+			];
+
+			expect(findHistoryFromActor(mockActor))
+				.toStrictEqual(expected);
+		});
+	});
+
+	test('WHEN valid change and history already exists THEN updates history', () =>
+	{
+		const firstHistoryElement = {something: 'something exists here already'};
+		setHistoryOnActor(mockActor, [firstHistoryElement]);
+
+		ActorHistory.storeUpdateActorHistory(mockActor, change);
+
+		const expected = [
+			firstHistoryElement,
+			{
+				hook: 'updateActor',
+				changes: {
+					change: CHANGE_DATA
+				},
+				timestampIRL: new Date(DATE_TIMESTAMP_UTC),
+				timestampInGame: SIMPLE_CALENDAR_TIMESTAMP_TO_DATE
+			}
+		];
+		expect(findHistoryFromActor(mockActor))
+			.toStrictEqual(expected);
+	});
 });
 
-test('storeUpdateActorHistory - When actor.type is not "character" Then does nothing', () =>
+describe('storeCreateItemHistory', () =>
 {
-	actor.type = 'npc';
+	describe('WHEN parameters are invalid THEN does nothing', () =>
+	{
+		test('WHEN item.parent is undefined THEN does nothing', () =>
+		{
+			item.parent = undefined;
 
-	ActorHistory.storeUpdateActorHistory(actor, buildChangeData());
+			ActorHistory.storeCreateItemHistory(item);
 
-	expect(actor.getFlag('actor-history', 'history'))
-		.toBeUndefined();
+			expect(findHistoryFromActor(mockActor))
+				.toBeUndefined();
+		});
+
+		test('WHEN actor.type is not "character" THEN does nothing', () =>
+		{
+			mockActor.type = 'npc';
+
+			ActorHistory.storeCreateItemHistory(item);
+
+			expect(findHistoryFromActor(mockActor))
+				.toBeUndefined();
+		});
+	});
+
+	describe('WHEN parameters are valid and no history exists THEN initializes and updates history', () =>
+	{
+		test('WHEN valid item and no history exists and Simple Calendar is not installed THEN initializes and updates history', () =>
+		{
+			mockSimpleCalendar(false);
+
+			ActorHistory.storeCreateItemHistory(item);
+
+			const expected = [
+				{
+					hook: 'createItem',
+					changes: {
+						item: ITEM_DATA
+					},
+					timestampIRL: new Date(DATE_TIMESTAMP_UTC)
+				}
+			];
+
+			expect(findHistoryFromActor(mockActor))
+				.toStrictEqual(expected);
+		});
+
+		test('WHEN valid item and no history exists THEN initializes and updates history', () =>
+		{
+			ActorHistory.storeCreateItemHistory(item);
+
+			const expected = [
+				{
+					hook: 'createItem',
+					changes: {
+						item: ITEM_DATA
+					},
+					timestampIRL: new Date(DATE_TIMESTAMP_UTC),
+					timestampInGame: SIMPLE_CALENDAR_TIMESTAMP_TO_DATE
+				}
+			];
+
+			expect(findHistoryFromActor(mockActor))
+				.toStrictEqual(expected);
+		});
+
+		test('WHEN valid item and no history exists THEN initializes and updates history correctly', () =>
+		{
+			mockTimestamp(12345);
+			mockSimpleCalendar(true, 'Another SimpleCalendar time object');
+			item.data = {
+				someData: 'a data value'
+			};
+
+			ActorHistory.storeCreateItemHistory(item);
+
+			const expected = [
+				{
+					hook: 'createItem',
+					changes: {
+						item: item.data
+					},
+					timestampIRL: new Date(12345),
+					timestampInGame: 'Another SimpleCalendar time object'
+				}
+			];
+			expect(findHistoryFromActor(mockActor))
+				.toStrictEqual(expected);
+		});
+	});
+
+	test('WHEN valid item and history already exists THEN updates history', () =>
+	{
+		const firstHistoryElement = {something: 'something exists here already'};
+		setHistoryOnActor(mockActor, [firstHistoryElement]);
+
+		ActorHistory.storeCreateItemHistory(item);
+
+		const expected = [
+			firstHistoryElement,
+			{
+				hook: 'createItem',
+				changes: {
+					item: ITEM_DATA
+				},
+				timestampIRL: new Date(DATE_TIMESTAMP_UTC),
+				timestampInGame: SIMPLE_CALENDAR_TIMESTAMP_TO_DATE
+			}
+		];
+		expect(findHistoryFromActor(mockActor))
+			.toStrictEqual(expected);
+	});
 });
 
-test('storeUpdateActorHistory - When is valid change and no history exists Then initializes history', () =>
+describe('storeUpdateItemHistory', () =>
 {
-	ActorHistory.storeUpdateActorHistory(actor, buildChangeData());
+	describe('WHEN parameters are invalid THEN does nothing', () =>
+	{
+		test('WHEN item.parent is undefined THEN does nothing', () =>
+		{
+			item.parent = undefined;
 
-	expect(actor.getFlag('actor-history', 'history'))
-		.toBeDefined();
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			expect(findHistoryFromActor(mockActor))
+				.toBeUndefined();
+		});
+
+		test('WHEN actor.type is not "character" THEN does nothing', () =>
+		{
+			mockActor.type = 'npc';
+
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			expect(findHistoryFromActor(mockActor))
+				.toBeUndefined();
+		});
+
+		test('WHEN undefined change THEN does nothing', () =>
+		{
+			ActorHistory.storeUpdateItemHistory(item);
+
+			expect(findHistoryFromActor(mockActor))
+				.toBeUndefined();
+		});
+
+		test('WHEN invalid change THEN does nothing', () =>
+		{
+			ActorHistory.storeUpdateItemHistory(item, {});
+
+			expect(findHistoryFromActor(mockActor))
+				.toBeUndefined();
+		});
+
+		test('WHEN undefined change data THEN does nothing', () =>
+		{
+			change.data = undefined;
+
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			expect(findHistoryFromActor(mockActor))
+				.toBeUndefined();
+		});
+	});
+
+	describe('WHEN parameters are valid and no history exists THEN initializes and updates history', () =>
+	{
+		test('WHEN valid parameters and no history exists and Simple Calendar is not installed THEN initializes and updates history', () =>
+		{
+			mockSimpleCalendar(false);
+
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			assertUpdateItemHistoryUpdatedOnActor(mockActor, ITEM_DATA, CHANGE_DATA, DATE_TIMESTAMP_UTC);
+		});
+
+		test('WHEN only change is damage and no history exists THEN initializes and updates history', () =>
+		{
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			assertUpdateItemHistoryUpdatedOnActor(mockActor, ITEM_DATA, CHANGE_DATA, DATE_TIMESTAMP_UTC, SIMPLE_CALENDAR_TIMESTAMP_TO_DATE);
+		});
+
+		test('WHEN valid parameters and no history exists THEN initializes and updates history correctly', () =>
+		{
+			mockTimestamp(12345);
+			mockSimpleCalendar(true, 'Another SimpleCalendar time object');
+			item.data = {
+				moreItemData: 'this is some more item data'
+			}
+			change.data = {
+				additionalInfo: 'another test value'
+			};
+
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			assertUpdateItemHistoryUpdatedOnActor(mockActor, item.data, change.data, 12345, 'Another SimpleCalendar time object');
+		});
+	});
+
+	describe('WHEN changes are made and history exists THEN updates history', () =>
+	{
+		test('WHEN valid parameters and completely unrelated history exists THEN updates history', () =>
+		{
+			const firstHistoryElement = {something: 'something exists here already'};
+			setHistoryOnActor(mockActor, [firstHistoryElement]);
+
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			assertUpdateItemHistoryUpdatedOnActor(mockActor, ITEM_DATA, CHANGE_DATA, DATE_TIMESTAMP_UTC, SIMPLE_CALENDAR_TIMESTAMP_TO_DATE,
+				[firstHistoryElement]);
+		});
+
+		test('WHEN valid parameters and unrelated similar history exists THEN updates history', () =>
+		{
+			const firstHistoryElement = buildUpdateItemHistory('A DIFFERENT ID', CLUB_DESCRIPTION, CLUB_DAMAGE, CLUB_DAMAGE_TYPE);
+			setHistoryOnActor(mockActor, [firstHistoryElement]);
+
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			assertUpdateItemHistoryUpdatedOnActor(mockActor, ITEM_DATA, CHANGE_DATA, DATE_TIMESTAMP_UTC, SIMPLE_CALENDAR_TIMESTAMP_TO_DATE,
+				[firstHistoryElement]);
+		});
+
+		test('WHEN description is changed and item exists in history THEN updates history', () =>
+		{
+			const relatedHistory = buildUpdateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE, CLUB_DAMAGE_TYPE);
+			setHistoryOnActor(mockActor, [relatedHistory]);
+			change.data.description = '<p>A new description of a club, because clubs are fun!</p>';
+
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			assertUpdateItemHistoryUpdatedOnActor(mockActor, ITEM_DATA, change.data, DATE_TIMESTAMP_UTC, SIMPLE_CALENDAR_TIMESTAMP_TO_DATE, [relatedHistory]);
+		});
+
+		test('WHEN description is changed and item update exists in history THEN updates history', () =>
+		{
+			const createItemHistory = buildCreateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE, CLUB_DAMAGE_TYPE);
+			const relatedHistory = buildUpdateItemHistory(ITEM_ID, '<p>A new and improved description!</p>', CLUB_DAMAGE + ' + 1', CLUB_DAMAGE_TYPE);
+			setHistoryOnActor(mockActor, [createItemHistory, relatedHistory]);
+			change.data.description = '<p>A new description of a club, because clubs are fun!</p>';
+
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			assertUpdateItemHistoryUpdatedOnActor(mockActor, ITEM_DATA, change.data, DATE_TIMESTAMP_UTC, SIMPLE_CALENDAR_TIMESTAMP_TO_DATE,
+				[createItemHistory, relatedHistory]);
+		});
+
+		test('WHEN damage is changed THEN updates history', () =>
+		{
+			const createItemHistory = buildCreateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE, CLUB_DAMAGE_TYPE);
+			const relatedHistory = buildUpdateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE + ' + 1', CLUB_DAMAGE_TYPE);
+			setHistoryOnActor(mockActor, [createItemHistory, relatedHistory]);
+			change.data.damage.parts[0] = CLUB_DAMAGE;
+
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			assertUpdateItemHistoryUpdatedOnActor(mockActor, ITEM_DATA, change.data, DATE_TIMESTAMP_UTC, SIMPLE_CALENDAR_TIMESTAMP_TO_DATE,
+				[createItemHistory, relatedHistory]);
+		});
+
+		test('WHEN damage type is changed THEN updates history', () =>
+		{
+			const createItemHistory = buildCreateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE, CLUB_DAMAGE_TYPE);
+			const relatedHistory = buildUpdateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE, 'acid');
+			setHistoryOnActor(mockActor, [createItemHistory, relatedHistory]);
+			change.data.damage.parts[1] = CLUB_DAMAGE_TYPE;
+
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			assertUpdateItemHistoryUpdatedOnActor(mockActor, ITEM_DATA, change.data, DATE_TIMESTAMP_UTC, SIMPLE_CALENDAR_TIMESTAMP_TO_DATE,
+				[createItemHistory, relatedHistory]);
+		});
+
+		test('WHEN damage is changed and identical to old history but not most recent THEN updates history', () =>
+		{
+			const createItemHistory = buildCreateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE, CLUB_DAMAGE_TYPE);
+			const oldRelatedHistory = buildUpdateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE + ' + 1', CLUB_DAMAGE_TYPE);
+			const newRelatedHistory = buildUpdateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE + ' + 2', CLUB_DAMAGE_TYPE);
+			setHistoryOnActor(mockActor, [createItemHistory, oldRelatedHistory, newRelatedHistory]);
+			change.data.damage.parts[0] = CLUB_DAMAGE + ' + 1';
+
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			assertUpdateItemHistoryUpdatedOnActor(mockActor, ITEM_DATA, change.data, DATE_TIMESTAMP_UTC, SIMPLE_CALENDAR_TIMESTAMP_TO_DATE,
+				[createItemHistory, oldRelatedHistory, newRelatedHistory]);
+		});
+
+		test('WHEN damage is changed and identical to initial history but not most recent THEN updates history', () =>
+		{
+			const createItemHistory = buildCreateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE, CLUB_DAMAGE_TYPE);
+			const oldRelatedHistory = buildUpdateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE + ' + 1', CLUB_DAMAGE_TYPE);
+			const newRelatedHistory = buildUpdateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE + ' + 2', CLUB_DAMAGE_TYPE);
+			setHistoryOnActor(mockActor, [createItemHistory, oldRelatedHistory, newRelatedHistory]);
+			change.data.damage.parts[0] = CLUB_DAMAGE;
+
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			assertUpdateItemHistoryUpdatedOnActor(mockActor, ITEM_DATA, change.data, DATE_TIMESTAMP_UTC, SIMPLE_CALENDAR_TIMESTAMP_TO_DATE,
+				[createItemHistory, oldRelatedHistory, newRelatedHistory]);
+		});
+	});
+
+	describe('WHEN changes only include repetitive damage updates THEN does not update history', () =>
+	{
+		test('WHEN only change is damage, and that damage is identical to history THEN does not update history', () =>
+		{
+			const createItemHistory = buildCreateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE, CLUB_DAMAGE_TYPE);
+			setHistoryOnActor(mockActor, [createItemHistory]);
+
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			expect(findHistoryFromActor(mockActor))
+				.toStrictEqual([createItemHistory]);
+		});
+
+		test('WHEN only change is damage, and that damage is identical to most recent history for that item THEN does not update history', () =>
+		{
+			const createItemHistory = buildCreateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE, CLUB_DAMAGE_TYPE);
+			const relatedHistory = buildUpdateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE, 'acid');
+			setHistoryOnActor(mockActor, [createItemHistory, relatedHistory]);
+			change.data.damage.parts[1] = 'acid';
+
+			ActorHistory.storeUpdateItemHistory(item, change);
+
+			expect(findHistoryFromActor(mockActor))
+				.toStrictEqual([createItemHistory, relatedHistory]);
+		});
+	});
 });
 
-test('storeUpdateActorHistory - When is valid change Then updates history', () =>
+describe('storeDeleteItemHistory', () => {
+	// TODO
+});
+
+function findHistoryFromActor(actor)
 {
-	const expectedChange = 'a test value';
-	mockSimpleCalendar(false);
+	return actor.getFlag('actor-history', 'history');
+}
 
-	ActorHistory.storeUpdateActorHistory(actor, buildChangeData(expectedChange));
+function setHistoryOnActor(actor, history)
+{
+	actor.setFlag('actor-history', 'history', history);
+}
 
-	const expected = {
-		hook: 'updateActor',
+function buildCreateItemHistory(id, description, damage, damageType)
+{
+	return {
+		hook: 'createItem',
 		changes: {
-			change: expectedChange
-		},
-		timestampIRL: new Date(DATE_TIMESTAMP_UTC)
-	}
-	expect(findMostRecentHistory())
-		.toStrictEqual(expected);
-});
-
-test('storeUpdateActorHistory - When is valid change and Simple Calendar installed Then updates history correctly', () =>
-{
-	const expectedChange = 'another test value';
-	mockTimestamp(12345)
-
-	ActorHistory.storeUpdateActorHistory(actor, buildChangeData(expectedChange));
-
-	const expected = {
-		hook: 'updateActor',
-		changes: {
-			change: expectedChange
-		},
-		timestampIRL: new Date(12345),
-		timestampInGame: SIMPLE_CALENDAR_TIMESTAMP_TO_DATE
-	}
-
-	expect(findMostRecentHistory())
-		.toStrictEqual(expected);
-});
-
-test('storeUpdateActorHistory - When is valid change and history already exists Then adds history at end', () =>
-{
-	let existingHistory = [{something: 'something exists here already'}];
-	actor.setFlag('actor-history', 'history', existingHistory);
-	const expectedChange = 'a test value';
-
-	ActorHistory.storeUpdateActorHistory(actor, buildChangeData(expectedChange));
-
-	const expected = {
-		hook: 'updateActor',
-		changes: {
-			change: expectedChange
+			item: buildItemData(id, description, damage, damageType)
 		},
 		timestampIRL: new Date(DATE_TIMESTAMP_UTC),
 		timestampInGame: SIMPLE_CALENDAR_TIMESTAMP_TO_DATE
-	}
-	expect(findMostRecentHistory())
-		.toStrictEqual(expected);
-});
-
-//endregion
-
-// TODO - everything below this
-
-function findMostRecentHistory()
-{
-	let history = actor.getFlag('actor-history', 'history');
-
-	return history[history.length - 1];
+	};
 }
 
-function buildChangeData(data, shouldAddActor)
+function buildUpdateItemHistory(id, description, damage, damageType)
 {
-	if (!data)
-	{
-		data = {};
-	}
-
-	const changeData = {
-		data: data
+	return {
+		hook: 'updateItem',
+		changes: {
+			item: buildItemData(id, description, damage, damageType),
+			change: {
+				damage: {
+					parts: [damage, damageType]
+				}
+			}
+		},
+		timestampIRL: new Date(DATE_TIMESTAMP_UTC),
+		timestampInGame: SIMPLE_CALENDAR_TIMESTAMP_TO_DATE
 	};
+}
 
-	if (shouldAddActor)
-	{
-		changeData.actor = actor;
-	}
-	return changeData;
+function buildItemData(id, description, damage, damageType)
+{
+	return {
+		_id: id,
+		data: {
+			description: description,
+			damage: {
+				parts: [damage, damageType]
+			}
+		}
+	};
 }
 
 function mockTimestamp(timestamp)
 {
-	Date.UTC = jest.fn(() => timestamp);
+	dateUTCSpy = jest.spyOn(Date, 'UTC')
+					 .mockImplementation(() => timestamp);
 }
 
 function mockSimpleCalendar(isInstalled, timestampToDateValue)
@@ -139,18 +558,27 @@ function mockSimpleCalendar(isInstalled, timestampToDateValue)
 	SimpleCalendar.api.timestampToDate.mockReturnValue(timestampToDateValue)
 }
 
-// TODO - test scenarios
-// - createItem
-// 	- Initializes history if none exists
-// - updateItem
-// 	- Initializes history if none exists
-// 	- DOES NOT update anything if item is not connected to actor
-// 	- DOES NOT update anything if item is connected to actor other than 'character' actors
-//	- DOES NOT update when closed
-//	- Updates when change was made
-//	- Updates when change was made and damage was changed
-//	- Updates when only change that was made was a damage change
-//	- DOES NOT update when closed and another item (without changes) exists
-//	- Updates when change was made and another item (without changes) exists
-//	- Updates when change was made and another item (with changes) exists
-//	- DOES NOT update when closed and another item (with changes) exists
+function assertUpdateItemHistoryUpdatedOnActor(actor, itemData, changeData, timestamp, simpleCalendarTimestamp, existingHistory)
+{
+	if (!existingHistory)
+	{
+		existingHistory = [];
+	}
+
+	let expectedAdditionalHistory = {
+		hook: 'updateItem',
+		changes: {
+			item: itemData,
+			change: changeData
+		},
+		timestampIRL: new Date(timestamp)
+	};
+	if (simpleCalendarTimestamp)
+	{
+		expectedAdditionalHistory.timestampInGame = simpleCalendarTimestamp;
+	}
+	existingHistory.push(expectedAdditionalHistory);
+
+	expect(findHistoryFromActor(actor))
+		.toStrictEqual(existingHistory);
+}
