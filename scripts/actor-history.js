@@ -13,9 +13,14 @@ Hooks.on('updateItem', async (item, change, options, userId) =>
 	await storeUpdateItemHistory(item, change);
 });
 
+Hooks.on('deleteItem', async (item, options, userId) =>
+{
+	await storeDeleteItemHistory(item);
+})
+
 export async function storeUpdateActorHistory(actor, change)
 {
-	if (!shouldActorStoreHistory(actor) || !change.data)
+	if (!isActorTrackable(actor) || !change.data)
 	{
 		return;
 	}
@@ -30,7 +35,7 @@ export async function storeCreateItemHistory(item)
 {
 	const actor = item.parent;
 
-	if (!shouldActorStoreHistory(actor))
+	if (!isActorTrackable(actor))
 	{
 		return;
 	}
@@ -45,7 +50,7 @@ export async function storeUpdateItemHistory(item, change)
 {
 	const actor = item.parent;
 
-	if (!shouldActorStoreHistory(actor) || !change.data || itemWasClosedWithNoChanges(item, change))
+	if (!isActorTrackable(actor) || !change.data || itemWasClosedWithNoChanges(item, change))
 	{
 		return;
 	}
@@ -55,6 +60,21 @@ export async function storeUpdateItemHistory(item, change)
 		change: change.data
 	};
 	await addChangeDataToActorHistory('updateItem', changes, actor);
+}
+
+export async function storeDeleteItemHistory(item)
+{
+	const actor = item.parent;
+
+	if (!isActorTrackable(actor))
+	{
+		return;
+	}
+
+	const changes = {
+		item: item.data
+	};
+	await addChangeDataToActorHistory('deleteItem', changes, actor);
 }
 
 async function addChangeDataToActorHistory(hookName, changes, actor)
@@ -73,7 +93,7 @@ async function addChangeDataToActorHistory(hookName, changes, actor)
 	await actor.setFlag('actor-history', 'history', currentHistory);
 }
 
-function shouldActorStoreHistory(actor)
+function isActorTrackable(actor)
 {
 	return actor && actor.type === 'character';
 }

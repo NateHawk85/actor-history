@@ -13,8 +13,7 @@ const ITEM_DATA = {
 	data: {
 		description: CLUB_DESCRIPTION,
 		damage: {
-			parts: [CLUB_DAMAGE, CLUB_DAMAGE_TYPE],
-			versatile: ''
+			parts: [CLUB_DAMAGE, CLUB_DAMAGE_TYPE]
 		}
 	},
 	img: 'systems/dnd5e/icons/items/weapons/club-spikes.jpg'
@@ -71,9 +70,9 @@ describe('storeUpdateActorHistory', () =>
 		});
 	});
 
-	describe('WHEN parameters are valid and no history exists THEN initializes and updates history', () =>
+	describe('WHEN parameters are valid and no history exists THEN initializes and updates history with updateActor data', () =>
 	{
-		test('WHEN valid change and no history exists and Simple Calendar is not installed THEN initializes and updates history', () =>
+		test('WHEN valid change and no history exists and Simple Calendar is not installed THEN initializes and updates history with updateActor data', () =>
 		{
 			mockSimpleCalendar(false);
 
@@ -92,7 +91,7 @@ describe('storeUpdateActorHistory', () =>
 				.toStrictEqual(expected);
 		});
 
-		test('WHEN valid change and no history exists THEN initializes and updates history', () =>
+		test('WHEN valid change and no history exists THEN initializes and updates history with updateActor data', () =>
 		{
 			ActorHistory.storeUpdateActorHistory(mockActor, change);
 
@@ -110,7 +109,7 @@ describe('storeUpdateActorHistory', () =>
 				.toStrictEqual(expected);
 		});
 
-		test('WHEN valid change and no history exists THEN initializes and updates history correctly', () =>
+		test('WHEN valid change and no history exists THEN initializes and updates history with updateActor data correctly', () =>
 		{
 			mockTimestamp(12345);
 			mockSimpleCalendar(true, 'Another SimpleCalendar time object');
@@ -136,7 +135,7 @@ describe('storeUpdateActorHistory', () =>
 		});
 	});
 
-	test('WHEN valid change and history already exists THEN updates history', () =>
+	test('WHEN valid change and history already exists THEN updates history with updateActor data', () =>
 	{
 		const firstHistoryElement = {something: 'something exists here already'};
 		setHistoryOnActor(mockActor, [firstHistoryElement]);
@@ -184,9 +183,9 @@ describe('storeCreateItemHistory', () =>
 		});
 	});
 
-	describe('WHEN parameters are valid and no history exists THEN initializes and updates history', () =>
+	describe('WHEN parameters are valid and no history exists THEN initializes and updates history with createItem data', () =>
 	{
-		test('WHEN valid item and no history exists and Simple Calendar is not installed THEN initializes and updates history', () =>
+		test('WHEN valid item and no history exists and Simple Calendar is not installed THEN initializes and updates history with createItem data', () =>
 		{
 			mockSimpleCalendar(false);
 
@@ -206,7 +205,7 @@ describe('storeCreateItemHistory', () =>
 				.toStrictEqual(expected);
 		});
 
-		test('WHEN valid item and no history exists THEN initializes and updates history', () =>
+		test('WHEN valid item and no history exists THEN initializes and updates history with createItem data', () =>
 		{
 			ActorHistory.storeCreateItemHistory(item);
 
@@ -225,7 +224,7 @@ describe('storeCreateItemHistory', () =>
 				.toStrictEqual(expected);
 		});
 
-		test('WHEN valid item and no history exists THEN initializes and updates history correctly', () =>
+		test('WHEN valid item and no history exists THEN initializes and updates history with createItem data correctly', () =>
 		{
 			mockTimestamp(12345);
 			mockSimpleCalendar(true, 'Another SimpleCalendar time object');
@@ -250,7 +249,7 @@ describe('storeCreateItemHistory', () =>
 		});
 	});
 
-	test('WHEN valid item and history already exists THEN updates history', () =>
+	test('WHEN valid item and history already exists THEN updates history with createItem data', () =>
 	{
 		const firstHistoryElement = {something: 'something exists here already'};
 		setHistoryOnActor(mockActor, [firstHistoryElement]);
@@ -324,9 +323,9 @@ describe('storeUpdateItemHistory', () =>
 		});
 	});
 
-	describe('WHEN parameters are valid and no history exists THEN initializes and updates history', () =>
+	describe('WHEN parameters are valid and no history exists THEN initializes and updates history with updateItem data', () =>
 	{
-		test('WHEN valid parameters and no history exists and Simple Calendar is not installed THEN initializes and updates history', () =>
+		test('WHEN valid parameters and no history exists and Simple Calendar is not installed THEN initializes and updates history with updateItem data', () =>
 		{
 			mockSimpleCalendar(false);
 
@@ -335,14 +334,14 @@ describe('storeUpdateItemHistory', () =>
 			assertUpdateItemHistoryUpdatedOnActor(mockActor, ITEM_DATA, CHANGE_DATA, DATE_TIMESTAMP_UTC);
 		});
 
-		test('WHEN only change is damage and no history exists THEN initializes and updates history', () =>
+		test('WHEN only change is damage and no history exists THEN initializes and updates history with updateItem data', () =>
 		{
 			ActorHistory.storeUpdateItemHistory(item, change);
 
 			assertUpdateItemHistoryUpdatedOnActor(mockActor, ITEM_DATA, CHANGE_DATA, DATE_TIMESTAMP_UTC, SIMPLE_CALENDAR_TIMESTAMP_TO_DATE);
 		});
 
-		test('WHEN valid parameters and no history exists THEN initializes and updates history correctly', () =>
+		test('WHEN valid parameters and no history exists THEN initializes and updates history with updateItem data correctly', () =>
 		{
 			mockTimestamp(12345);
 			mockSimpleCalendar(true, 'Another SimpleCalendar time object');
@@ -359,9 +358,9 @@ describe('storeUpdateItemHistory', () =>
 		});
 	});
 
-	describe('WHEN changes are made and history exists THEN updates history', () =>
+	describe('WHEN changes are made and history exists THEN updates history with updateItem data', () =>
 	{
-		test('WHEN valid parameters and completely unrelated history exists THEN updates history', () =>
+		test('WHEN valid parameters and completely unrelated history exists THEN updates history with updateItem data', () =>
 		{
 			const firstHistoryElement = {something: 'something exists here already'};
 			setHistoryOnActor(mockActor, [firstHistoryElement]);
@@ -372,7 +371,7 @@ describe('storeUpdateItemHistory', () =>
 				[firstHistoryElement]);
 		});
 
-		test('WHEN valid parameters and unrelated similar history exists THEN updates history', () =>
+		test('WHEN valid parameters and unrelated similar history exists THEN updates history with updateItem data', () =>
 		{
 			const firstHistoryElement = buildUpdateItemHistory('A DIFFERENT ID', CLUB_DESCRIPTION, CLUB_DAMAGE, CLUB_DAMAGE_TYPE);
 			setHistoryOnActor(mockActor, [firstHistoryElement]);
@@ -383,7 +382,7 @@ describe('storeUpdateItemHistory', () =>
 				[firstHistoryElement]);
 		});
 
-		test('WHEN description is changed and item exists in history THEN updates history', () =>
+		test('WHEN description is changed and item exists in history THEN updates history with updateItem data', () =>
 		{
 			const relatedHistory = buildUpdateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE, CLUB_DAMAGE_TYPE);
 			setHistoryOnActor(mockActor, [relatedHistory]);
@@ -394,7 +393,7 @@ describe('storeUpdateItemHistory', () =>
 			assertUpdateItemHistoryUpdatedOnActor(mockActor, ITEM_DATA, change.data, DATE_TIMESTAMP_UTC, SIMPLE_CALENDAR_TIMESTAMP_TO_DATE, [relatedHistory]);
 		});
 
-		test('WHEN description is changed and item update exists in history THEN updates history', () =>
+		test('WHEN description is changed and item update exists in history THEN updates history with updateItem data', () =>
 		{
 			const createItemHistory = buildCreateItemHistory(ITEM_ID, CLUB_DESCRIPTION, CLUB_DAMAGE, CLUB_DAMAGE_TYPE);
 			const relatedHistory = buildUpdateItemHistory(ITEM_ID, '<p>A new and improved description!</p>', CLUB_DAMAGE + ' + 1', CLUB_DAMAGE_TYPE);
@@ -490,8 +489,118 @@ describe('storeUpdateItemHistory', () =>
 	});
 });
 
-describe('storeDeleteItemHistory', () => {
-	// TODO
+describe('storeDeleteItemHistory', () =>
+{
+	describe('WHEN parameters are invalid THEN does nothing', () =>
+	{
+		test('WHEN item.parent is undefined THEN does nothing', () =>
+		{
+			item.parent = undefined;
+
+			ActorHistory.storeDeleteItemHistory(item);
+
+			expect(findHistoryFromActor(mockActor))
+				.toBeUndefined();
+		});
+
+		test('WHEN actor.type is not "character" THEN does nothing', () =>
+		{
+			mockActor.type = 'npc';
+
+			ActorHistory.storeDeleteItemHistory(item);
+
+			expect(findHistoryFromActor(mockActor))
+				.toBeUndefined();
+		});
+	});
+
+	describe('WHEN parameters are valid and no history exists THEN initializes and updates history with deleteItem data', () =>
+	{
+		test('WHEN valid item and no history exists and Simple Calendar is not installed THEN initializes and updates history with deleteItem data', () =>
+		{
+			mockSimpleCalendar(false);
+
+			ActorHistory.storeDeleteItemHistory(item);
+
+			const expected = [
+				{
+					hook: 'deleteItem',
+					changes: {
+						item: ITEM_DATA
+					},
+					timestampIRL: new Date(DATE_TIMESTAMP_UTC)
+				}
+			];
+
+			expect(findHistoryFromActor(mockActor))
+				.toStrictEqual(expected);
+		});
+
+		test('WHEN valid item and no history exists THEN initializes and updates history with deleteItem data', () =>
+		{
+			ActorHistory.storeDeleteItemHistory(item);
+
+			const expected = [
+				{
+					hook: 'deleteItem',
+					changes: {
+						item: ITEM_DATA
+					},
+					timestampIRL: new Date(DATE_TIMESTAMP_UTC),
+					timestampInGame: SIMPLE_CALENDAR_TIMESTAMP_TO_DATE
+				}
+			];
+
+			expect(findHistoryFromActor(mockActor))
+				.toStrictEqual(expected);
+		});
+
+		test('WHEN valid item and no history exists THEN initializes and updates history with deleteItem data correctly', () =>
+		{
+			mockTimestamp(12345);
+			mockSimpleCalendar(true, 'Another SimpleCalendar time object');
+			item.data = {
+				someData: 'a data value'
+			};
+
+			ActorHistory.storeDeleteItemHistory(item);
+
+			const expected = [
+				{
+					hook: 'deleteItem',
+					changes: {
+						item: item.data
+					},
+					timestampIRL: new Date(12345),
+					timestampInGame: 'Another SimpleCalendar time object'
+				}
+			];
+			expect(findHistoryFromActor(mockActor))
+				.toStrictEqual(expected);
+		});
+	});
+
+	test('WHEN valid item and history already exists THEN updates history with deleteItem data', () =>
+	{
+		const firstHistoryElement = {something: 'something exists here already'};
+		setHistoryOnActor(mockActor, [firstHistoryElement]);
+
+		ActorHistory.storeDeleteItemHistory(item);
+
+		const expected = [
+			firstHistoryElement,
+			{
+				hook: 'deleteItem',
+				changes: {
+					item: ITEM_DATA
+				},
+				timestampIRL: new Date(DATE_TIMESTAMP_UTC),
+				timestampInGame: SIMPLE_CALENDAR_TIMESTAMP_TO_DATE
+			}
+		];
+		expect(findHistoryFromActor(mockActor))
+			.toStrictEqual(expected);
+	});
 });
 
 function findHistoryFromActor(actor)

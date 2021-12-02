@@ -44,3 +44,9 @@ A small FoundryVTT module that allows tracking of Actor modification history.
 - `await canvas.tokens.controlled[0].actor.setFlag('actor-history', 'history', [])`
 - `CONFIG.debug.hooks = true`
 - `game.actors.directory.documents.filter(target => target.type === 'character'); (or 'npc')`
+- The following
+  -     const history = actor.getFlag('actor-history', 'history');
+        console.log('ADDED HISTORY');
+        console.log(history[history.length - 1]);
+        console.log('FULL HISTORY');
+        console.log(history);
